@@ -10,6 +10,7 @@ RUN echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/10archive \
     gcc \
     gdal-bin \
     git \
+    cron \
     libgdal-dev \
     libgeos-dev \
     libjpeg-dev \
