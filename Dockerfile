@@ -28,9 +28,10 @@ COPY requirements/ requirements/
 # Build psycopg2 from source to avoid manylinux wheel glibc symbol conflicts.
 RUN pip install --no-cache-dir Django==1.11.8 \
     && pip install --no-cache-dir --no-binary psycopg2 psycopg2==2.7.1 \
-    && pip install --no-cache-dir \
+ARG REQUIREMENTS=local.txt
+RUN pip install --no-cache-dir \
     -r requirements/base.txt \
-    -r requirements/local.txt
+    -r requirements/${REQUIREMENTS}
 # django-appconf 0.6.0 references django.utils.importlib which was removed in
 # Django 1.9; Python 2.7 has a standard-library importlib so the fix is safe.
 RUN sed -i 's/from django.utils.importlib import import_module/from importlib import import_module/' \

@@ -7,16 +7,19 @@
 
 set -e
 
-COMPOSE="docker compose -f docker-compose.prod.yml"
+COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.prod"
 EMAIL="ebrelsford@stamen.com"
 STAGING=0
 
-# Read DOMAIN and TILES_DOMAIN from .env.prod
+# Read domain vars from .env.prod
 if [ -f .env.prod ]; then
-  export $(grep -E '^(DOMAIN|TILES_DOMAIN)=' .env.prod | xargs)
+  export $(grep -E '^NYCHAREALTALK_(DOMAIN|TILES_DOMAIN)=' .env.prod | xargs)
 fi
-: "${DOMAIN:?Set DOMAIN in .env.prod}"
-: "${TILES_DOMAIN:?Set TILES_DOMAIN in .env.prod}"
+: "${NYCHAREALTALK_DOMAIN:?Set NYCHAREALTALK_DOMAIN in .env.prod}"
+: "${NYCHAREALTALK_TILES_DOMAIN:?Set NYCHAREALTALK_TILES_DOMAIN in .env.prod}"
+
+DOMAIN="$NYCHAREALTALK_DOMAIN"
+TILES_DOMAIN="$NYCHAREALTALK_TILES_DOMAIN"
 
 if [ "$1" = "--staging" ]; then
   STAGING=1

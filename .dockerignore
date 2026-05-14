@@ -1,10 +1,11 @@
 .git
 .env
+.env.prod
 *.pyc
 *.pyo
 __pycache__
-nycommons/media/
-nycommons/collected_static/
+nycharealtalk/media/
+nycharealtalk/collected_static/
+nycharealtalk/static/node_modules/
 logs/
-nycommons/static/node_modules/
 tilestache/tilestache.cfg

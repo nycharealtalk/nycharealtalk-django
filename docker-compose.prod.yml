@@ -1,14 +1,16 @@
 # Production deployment on a single server.
-# Set DOMAIN and TILES_DOMAIN in .env.prod to switch between dev and prod:
-#   DOMAIN=dev.nycharealtalk.org / TILES_DOMAIN=tiles.dev.nycharealtalk.org
-#   DOMAIN=nycharealtalk.org     / TILES_DOMAIN=tiles.nycharealtalk.org
+# All compose commands require --env-file .env.prod so that ${VAR} substitutions work.
+#
+# Set NYCHAREALTALK_DOMAIN and NYCHAREALTALK_TILES_DOMAIN in .env.prod to switch environments:
+#   NYCHAREALTALK_DOMAIN=dev.nycharealtalk.org
+#   NYCHAREALTALK_TILES_DOMAIN=tiles.dev.nycharealtalk.org
 #
 # First-time setup:
-#   1. Point DOMAIN, www.DOMAIN, and TILES_DOMAIN DNS to this server.
+#   1. Point NYCHAREALTALK_DOMAIN, www.NYCHAREALTALK_DOMAIN, and NYCHAREALTALK_TILES_DOMAIN DNS to this server.
 #   2. Copy .env.example to .env.prod and fill in production values (see .env.example).
 #   3. Add the production-only vars to .env.prod:
-#        DOMAIN=dev.nycharealtalk.org
-#        TILES_DOMAIN=tiles.dev.nycharealtalk.org
+#        NYCHAREALTALK_DOMAIN=dev.nycharealtalk.org
+#        NYCHAREALTALK_TILES_DOMAIN=tiles.dev.nycharealtalk.org
 #        NYCHAREALTALK_ALLOWED_HOSTS=dev.nycharealtalk.org,www.dev.nycharealtalk.org
 #        NYCHAREALTALK_MEMCACHE_LOCATION=memcached:11211
 #        NYCHAREALTALK_EMAIL_HOST=...
@@ -16,16 +18,16 @@
 #        NYCHAREALTALK_EMAIL_PASSWORD=...
 #        NYCHAREALTALK_DEFAULT_FROM_EMAIL=...
 #        NYCHAREALTALK_SERVER_EMAIL=...
-#   4. docker compose -f docker-compose.prod.yml up -d db memcached
-#   5. docker compose -f docker-compose.prod.yml run --rm web python manage.py migrate
-#   6. docker compose -f docker-compose.prod.yml run --rm web python manage.py collectstatic --noinput
+#   4. docker compose -f docker-compose.prod.yml --env-file .env.prod up -d db memcached
+#   5. docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web python manage.py migrate
+#   6. docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web python manage.py collectstatic --noinput
 #   7. ./docker/init-letsencrypt.sh   # issues SSL certs and starts everything
 #
 # Subsequent deploys:
-#   docker compose -f docker-compose.prod.yml build
-#   docker compose -f docker-compose.prod.yml up -d
-#   docker compose -f docker-compose.prod.yml run --rm web python manage.py migrate
-#   docker compose -f docker-compose.prod.yml run --rm web python manage.py collectstatic --noinput
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod build
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web python manage.py migrate
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web python manage.py collectstatic --noinput
 
 services:
   db:
@@ -49,7 +51,10 @@ services:
     restart: unless-stopped
 
   web:
-    build: .
+    build:
+      context: .
+      args:
+        REQUIREMENTS: production.txt
     command: gunicorn nycharealtalk.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120
     volumes:
       - static_files:/app/nycharealtalk/collected_static
@@ -97,15 +102,18 @@ services:
       - certbot_certs:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot:ro
     environment:
-      DOMAIN: ${DOMAIN}
-      TILES_DOMAIN: ${TILES_DOMAIN}
+      DOMAIN: ${NYCHAREALTALK_DOMAIN}
+      TILES_DOMAIN: ${NYCHAREALTALK_TILES_DOMAIN}
     depends_on:
       - web
       - tilestache
     restart: unless-stopped
 
   scheduler:
-    build: .
+    build:
+      context: .
+      args:
+        REQUIREMENTS: production.txt
     entrypoint: /app/docker/scheduler-entrypoint.sh
     volumes:
       - ./docker/crontab:/etc/cron.d/nycharealtalk:ro
