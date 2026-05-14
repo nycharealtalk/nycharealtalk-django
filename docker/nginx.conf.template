@@ -9,7 +9,7 @@ upstream tilestache {
 # HTTP — redirect to HTTPS and serve certbot challenges
 server {
     listen 80;
-    server_name nycharealtalk.org www.nycharealtalk.org;
+    server_name ${DOMAIN} www.${DOMAIN};
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -22,7 +22,7 @@ server {
 
 server {
     listen 80;
-    server_name tiles.nycharealtalk.org;
+    server_name ${TILES_DOMAIN};
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -36,10 +36,10 @@ server {
 # HTTPS — main site
 server {
     listen 443 ssl;
-    server_name nycharealtalk.org www.nycharealtalk.org;
+    server_name ${DOMAIN} www.${DOMAIN};
 
-    ssl_certificate     /etc/letsencrypt/live/nycharealtalk.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/nycharealtalk.org/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;
     ssl_session_cache   shared:SSL:10m;
@@ -70,10 +70,10 @@ server {
 # HTTPS — tile server
 server {
     listen 443 ssl;
-    server_name tiles.nycharealtalk.org;
+    server_name ${TILES_DOMAIN};
 
-    ssl_certificate     /etc/letsencrypt/live/tiles.nycharealtalk.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/tiles.nycharealtalk.org/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/${TILES_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${TILES_DOMAIN}/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_ciphers         HIGH:!aNULL:!MD5;
     ssl_session_cache   shared:SSL:10m;

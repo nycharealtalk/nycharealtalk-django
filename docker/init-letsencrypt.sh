@@ -11,6 +11,13 @@ COMPOSE="docker compose -f docker-compose.prod.yml"
 EMAIL="ebrelsford@stamen.com"
 STAGING=0
 
+# Read DOMAIN and TILES_DOMAIN from .env.prod
+if [ -f .env.prod ]; then
+  export $(grep -E '^(DOMAIN|TILES_DOMAIN)=' .env.prod | xargs)
+fi
+: "${DOMAIN:?Set DOMAIN in .env.prod}"
+: "${TILES_DOMAIN:?Set TILES_DOMAIN in .env.prod}"
+
 if [ "$1" = "--staging" ]; then
   STAGING=1
 fi
@@ -24,13 +31,13 @@ fi
 $COMPOSE run --rm certbot mkdir -p /var/www/certbot
 
 # Create dummy self-signed certs so nginx can start before real certs exist
-for DOMAIN in nycharealtalk.org tiles.nycharealtalk.org; do
-  echo "Creating dummy cert for $DOMAIN..."
+for D in "$DOMAIN" "$TILES_DOMAIN"; do
+  echo "Creating dummy cert for $D..."
   $COMPOSE run --rm --entrypoint "" certbot sh -c "
-    mkdir -p /etc/letsencrypt/live/$DOMAIN &&
+    mkdir -p /etc/letsencrypt/live/$D &&
     openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
-      -keyout /etc/letsencrypt/live/$DOMAIN/privkey.pem \
-      -out    /etc/letsencrypt/live/$DOMAIN/fullchain.pem \
+      -keyout /etc/letsencrypt/live/$D/privkey.pem \
+      -out    /etc/letsencrypt/live/$D/fullchain.pem \
       -subj   '/CN=localhost'
   "
 done
@@ -40,17 +47,17 @@ echo "Starting nginx..."
 $COMPOSE up -d nginx
 
 # Get real certs
-echo "Requesting cert for nycharealtalk.org..."
+echo "Requesting cert for $DOMAIN..."
 $COMPOSE run --rm --entrypoint "" certbot certbot certonly \
   --webroot -w /var/www/certbot \
-  -d nycharealtalk.org -d www.nycharealtalk.org \
+  -d "$DOMAIN" -d "www.$DOMAIN" \
   --email "$EMAIL" --agree-tos --no-eff-email \
   $STAGING_FLAG
 
-echo "Requesting cert for tiles.nycharealtalk.org..."
+echo "Requesting cert for $TILES_DOMAIN..."
 $COMPOSE run --rm --entrypoint "" certbot certbot certonly \
   --webroot -w /var/www/certbot \
-  -d tiles.nycharealtalk.org \
+  -d "$TILES_DOMAIN" \
   --email "$EMAIL" --agree-tos --no-eff-email \
   $STAGING_FLAG
 

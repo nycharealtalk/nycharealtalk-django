@@ -1,10 +1,15 @@
-# Production deployment for nycharealtalk.org on a single server.
+# Production deployment on a single server.
+# Set DOMAIN and TILES_DOMAIN in .env.prod to switch between dev and prod:
+#   DOMAIN=dev.nycharealtalk.org / TILES_DOMAIN=tiles.dev.nycharealtalk.org
+#   DOMAIN=nycharealtalk.org     / TILES_DOMAIN=tiles.nycharealtalk.org
 #
 # First-time setup:
-#   1. Point nycharealtalk.org, www.nycharealtalk.org, and tiles.nycharealtalk.org DNS to this server.
+#   1. Point DOMAIN, www.DOMAIN, and TILES_DOMAIN DNS to this server.
 #   2. Copy .env.example to .env.prod and fill in production values (see .env.example).
 #   3. Add the production-only vars to .env.prod:
-#        NYCHAREALTALK_ALLOWED_HOSTS=nycharealtalk.org,www.nycharealtalk.org
+#        DOMAIN=dev.nycharealtalk.org
+#        TILES_DOMAIN=tiles.dev.nycharealtalk.org
+#        NYCHAREALTALK_ALLOWED_HOSTS=dev.nycharealtalk.org,www.dev.nycharealtalk.org
 #        NYCHAREALTALK_MEMCACHE_LOCATION=memcached:11211
 #        NYCHAREALTALK_EMAIL_HOST=...
 #        NYCHAREALTALK_EMAIL_USER=...
@@ -86,11 +91,14 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
       - static_files:/static:ro
       - media_files:/media:ro
       - certbot_certs:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot:ro
+    environment:
+      DOMAIN: ${DOMAIN}
+      TILES_DOMAIN: ${TILES_DOMAIN}
     depends_on:
       - web
       - tilestache
