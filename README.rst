@@ -66,44 +66,10 @@ Loading a database snapshot
 
 To restore a production or staging dump into the Docker database::
 
-    docker compose exec -T db psql -U nycharealtalk nycharealtalk < dump.sql
+    docker compose exec -T db pg_restore -U nycharealtalk -d nycharealtalk --disable-triggers --no-owner < dbdump.dump
 
 After restoring, re-run the TileStache views step above since they may not be
 included in the dump.
-
-Manual setup (legacy)
-*********************
-
-Prerequisites:
-
- 1. Python 2.x with virtualenv/virtualenvwrapper.
- 2. `Postgres <https://www.postgresql.org/>`_ and `PostGIS <http://postgis.net/>`_ installed locally. Create a database and user, both named ``nycharealtalk``, with the PostGIS extension enabled.
- 3. Node LTS 6.10.x and npm.
-
- 1. Clone this repo locally.
- 2. Create and activate a virtualenv, then install requirements::
-
-      pip install -r requirements/base.txt -r requirements/local.txt
-
- 3. Copy ``deploy/templates/envvars.sh`` somewhere, fill in the values, and source it.
- 4. Run the Django project::
-
-      python nycharealtalk/manage.py runserver_plus
-
- 5. Copy ``deploy/templates/tilestache.cfg`` to ``tilestache/tilestache.cfg`` and update the database credentials. Create the required views::
-
-      psql -U nycharealtalk nycharealtalk -f docker/create-views.sql
-
-    Then start TileStache::
-
-      tilestache-server.py -c tilestache/tilestache.cfg
-
- 6. Build frontend assets::
-
-      cd nycommons/static
-      npm install
-      npm run css:dev
-      npm run dev
 
 
 Organization
