@@ -49,13 +49,20 @@ done
 echo "Starting nginx..."
 $COMPOSE up -d nginx
 
+# Remove dummy certs so certbot can issue real ones
+for D in "$DOMAIN" "$TILES_DOMAIN"; do
+  $COMPOSE run --rm --entrypoint "" certbot rm -rf \
+    /etc/letsencrypt/live/$D \
+    /etc/letsencrypt/archive/$D \
+    /etc/letsencrypt/renewal/$D.conf
+done
+
 # Get real certs
 echo "Requesting cert for $DOMAIN..."
 $COMPOSE run --rm --entrypoint "" certbot certbot certonly \
   --webroot -w /var/www/certbot \
   -d "$DOMAIN" -d "www.$DOMAIN" \
   --email "$EMAIL" --agree-tos --no-eff-email \
-  --force-renewal \
   $STAGING_FLAG
 
 echo "Requesting cert for $TILES_DOMAIN..."
@@ -63,7 +70,6 @@ $COMPOSE run --rm --entrypoint "" certbot certbot certonly \
   --webroot -w /var/www/certbot \
   -d "$TILES_DOMAIN" \
   --email "$EMAIL" --agree-tos --no-eff-email \
-  --force-renewal \
   $STAGING_FLAG
 
 # Reload nginx with real certs
