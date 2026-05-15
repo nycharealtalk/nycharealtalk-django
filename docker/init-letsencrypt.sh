@@ -8,7 +8,7 @@
 set -e
 
 COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.prod"
-EMAIL="ebrelsford@stamen.com"
+EMAIL="ebrelsford@gmail.com"
 STAGING=0
 
 # Read domain vars from .env.prod
@@ -31,7 +31,7 @@ if [ "$STAGING" = "1" ]; then
 fi
 
 # Create the certbot directories nginx expects
-$COMPOSE run --rm certbot mkdir -p /var/www/certbot
+$COMPOSE run --rm --entrypoint "" certbot mkdir -p /var/www/certbot
 
 # Create dummy self-signed certs so nginx can start before real certs exist
 for D in "$DOMAIN" "$TILES_DOMAIN"; do
