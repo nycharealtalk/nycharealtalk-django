@@ -27,7 +27,8 @@ COPY requirements/ requirements/
 # Install Django first — some packages (django-monitor) import it in setup.py.
 # Build psycopg2 from source to avoid manylinux wheel glibc symbol conflicts.
 RUN pip install --no-cache-dir Django==1.11.8 \
-    && pip install --no-cache-dir --no-binary psycopg2 psycopg2==2.7.1 \
+    && pip install --no-cache-dir --no-binary psycopg2 psycopg2==2.8.6
+
 ARG REQUIREMENTS=local.txt
 RUN pip install --no-cache-dir \
     -r requirements/base.txt \

@@ -9,9 +9,6 @@ originally developed for nycommons.org.
 Development setup
 -----------------
 
-Docker (recommended)
-********************
-
 Prerequisites: `Docker <https://docs.docker.com/get-docker/>`_ with Compose.
 
  1. Clone this repo locally.
@@ -66,44 +63,32 @@ Loading a database snapshot
 
 To restore a production or staging dump into the Docker database::
 
-    docker compose exec -T db psql -U nycharealtalk nycharealtalk < dump.sql
+    docker compose exec -T db pg_restore -U nycharealtalk -d nycharealtalk --disable-triggers --no-owner < dump.dump
 
 After restoring, re-run the TileStache views step above since they may not be
 included in the dump.
 
-Manual setup (legacy)
-*********************
 
-Prerequisites:
+Production deployment
+---------------------
 
- 1. Python 2.x with virtualenv/virtualenvwrapper.
- 2. `Postgres <https://www.postgresql.org/>`_ and `PostGIS <http://postgis.net/>`_ installed locally. Create a database and user, both named ``nycharealtalk``, with the PostGIS extension enabled.
- 3. Node LTS 6.10.x and npm.
+See the comments at the top of ``docker-compose.prod.yml`` for the full
+first-time setup and subsequent deploy steps. In brief:
 
- 1. Clone this repo locally.
- 2. Create and activate a virtualenv, then install requirements::
+ 1. Copy ``.env.example`` to ``.env.prod`` and fill in all values, including
+    the production-only variables listed in ``docker-compose.prod.yml``.
 
-      pip install -r requirements/base.txt -r requirements/local.txt
+ 2. All ``docker compose`` commands for production require both flags::
 
- 3. Copy ``deploy/templates/envvars.sh`` somewhere, fill in the values, and source it.
- 4. Run the Django project::
+      docker compose -f docker-compose.prod.yml --env-file .env.prod <command>
 
-      python nycharealtalk/manage.py runserver_plus
+ 3. On first deploy, run migrations and collect static files, then run
+    ``docker/init-letsencrypt.sh`` to obtain SSL certificates and start all
+    services.
 
- 5. Copy ``deploy/templates/tilestache.cfg`` to ``tilestache/tilestache.cfg`` and update the database credentials. Create the required views::
-
-      psql -U nycharealtalk nycharealtalk -f docker/create-views.sql
-
-    Then start TileStache::
-
-      tilestache-server.py -c tilestache/tilestache.cfg
-
- 6. Build frontend assets::
-
-      cd nycommons/static
-      npm install
-      npm run css:dev
-      npm run dev
+ 4. To switch between staging (``dev.nycharealtalk.org``) and production
+    (``nycharealtalk.org``), update ``NYCHAREALTALK_DOMAIN`` and
+    ``NYCHAREALTALK_TILES_DOMAIN`` in ``.env.prod`` and rebuild.
 
 
 Organization
