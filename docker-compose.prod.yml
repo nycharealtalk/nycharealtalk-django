@@ -70,7 +70,7 @@ services:
       NYCHAREALTALK_DB_HOST: db
       NYCHAREALTALK_DB_PORT: "5432"
       DJANGO_SETTINGS_MODULE: nycharealtalk.settings.production
-      MEMCACHED_HOST: memcached
+      MEMCACHED_LOCATION: memcached
     restart: unless-stopped
 
   tilestache:
