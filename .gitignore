@@ -1,6 +1,5 @@
 *.pyc
 .*.sw[po]
-tilestache
 cert.*
 .env
 .env.*

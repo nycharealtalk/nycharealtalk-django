@@ -1,0 +1,90 @@
+{
+  "cache": {
+    "name": "Memcache",
+    "servers": ["${MEMCACHED_HOST}:11211"],
+    "key prefix": ""
+  },
+  "layers": {
+    "lots": {
+      "allowed origin": "*",
+      "provider": {
+        "class": "TileStache.Goodies.VecTiles:MultiProvider",
+        "kwargs": {
+          "names": ["lots-centroids", "lots-polygons"]
+        }
+      }
+    },
+    "lots-centroids": {
+      "allowed origin": "*",
+      "provider": {
+        "class": "TileStache.Goodies.VecTiles:Provider",
+        "kwargs": {
+          "dbinfo": {
+            "host": "${DB_HOST}",
+            "port": "${DB_PORT}",
+            "user": "${DB_USER}",
+            "password": "${DB_PASSWORD}",
+            "database": "${DB_NAME}"
+          },
+          "queries": [
+            "SELECT id AS __id__, ST_Transform(centroid, 900913) AS __geometry__, commons_type, owner_id, priority, organizing FROM visible_centroids WHERE centroid is not null"
+          ]
+        }
+      }
+    },
+    "lots-polygons": {
+      "allowed origin": "*",
+      "provider": {
+        "class": "TileStache.Goodies.VecTiles:Provider",
+        "kwargs": {
+          "clip": false,
+          "dbinfo": {
+            "host": "${DB_HOST}",
+            "port": "${DB_PORT}",
+            "user": "${DB_USER}",
+            "password": "${DB_PASSWORD}",
+            "database": "${DB_NAME}"
+          },
+          "queries": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "SELECT id AS __id__, ST_Transform(polygon, 900913) AS __geometry__, commons_type, owner_id, priority, organizing FROM visible_polygons WHERE polygon is not null"
+          ]
+        }
+      }
+    },
+    "parcels": {
+      "allowed origin": "*",
+      "provider": {
+        "class": "TileStache.Goodies.VecTiles:Provider",
+        "kwargs": {
+          "clip": false,
+          "dbinfo": {
+            "host": "${DB_HOST}",
+            "port": "${DB_PORT}",
+            "user": "${DB_USER}",
+            "password": "${DB_PASSWORD}",
+            "database": "${DB_NAME}"
+          },
+          "queries": [
+            "select id AS __id__, address, ST_Transform(geom, 900913) AS __geometry__ from parcels_parcel where geom && ST_Transform(!bbox!, 4326)"
+          ]
+        }
+      }
+    }
+  }
+}
