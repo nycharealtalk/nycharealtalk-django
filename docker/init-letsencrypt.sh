@@ -55,6 +55,7 @@ $COMPOSE run --rm --entrypoint "" certbot certbot certonly \
   --webroot -w /var/www/certbot \
   -d "$DOMAIN" -d "www.$DOMAIN" \
   --email "$EMAIL" --agree-tos --no-eff-email \
+  --force-renewal \
   $STAGING_FLAG
 
 echo "Requesting cert for $TILES_DOMAIN..."
@@ -62,6 +63,7 @@ $COMPOSE run --rm --entrypoint "" certbot certbot certonly \
   --webroot -w /var/www/certbot \
   -d "$TILES_DOMAIN" \
   --email "$EMAIL" --agree-tos --no-eff-email \
+  --force-renewal \
   $STAGING_FLAG
 
 # Reload nginx with real certs
