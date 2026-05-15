@@ -1,7 +1,7 @@
 {
   "cache": {
     "name": "Memcache",
-    "servers": ["127.0.0.1:11211"],
+    "servers": ["${MEMCACHED_HOST}:11211"],
     "key prefix": ""
   },
   "layers": {
@@ -20,10 +20,11 @@
         "class": "TileStache.Goodies.VecTiles:Provider",
         "kwargs": {
           "dbinfo": {
-            "host": "localhost",
-            "user": "nycharealtalk",
-            "password": "<DB_PASSWORD>",
-            "database": "nycharealtalk"
+            "host": "${DB_HOST}",
+            "port": "${DB_PORT}",
+            "user": "${DB_USER}",
+            "password": "${DB_PASSWORD}",
+            "database": "${DB_NAME}"
           },
           "queries": [
             "SELECT id AS __id__, ST_Transform(centroid, 900913) AS __geometry__, commons_type, owner_id, priority, organizing FROM visible_centroids WHERE centroid is not null"
@@ -38,10 +39,11 @@
         "kwargs": {
           "clip": false,
           "dbinfo": {
-            "host": "localhost",
-            "user": "nycharealtalk",
-            "password": "<DB_PASSWORD>",
-            "database": "nycharealtalk"
+            "host": "${DB_HOST}",
+            "port": "${DB_PORT}",
+            "user": "${DB_USER}",
+            "password": "${DB_PASSWORD}",
+            "database": "${DB_NAME}"
           },
           "queries": [
             null,
@@ -64,22 +66,23 @@
           ]
         }
       }
-    }, 
+    },
     "parcels": {
       "allowed origin": "*",
       "provider": {
         "class": "TileStache.Goodies.VecTiles:Provider",
         "kwargs": {
+          "clip": false,
           "dbinfo": {
-            "host": "localhost",
-            "user": "nycharealtalk",
-            "password": "<DB_PASSWORD>",
-            "database": "nycharealtalk"
+            "host": "${DB_HOST}",
+            "port": "${DB_PORT}",
+            "user": "${DB_USER}",
+            "password": "${DB_PASSWORD}",
+            "database": "${DB_NAME}"
           },
           "queries": [
             "select id AS __id__, address, ST_Transform(geom, 900913) AS __geometry__ from parcels_parcel where geom && ST_Transform(!bbox!, 4326)"
-          ],
-          "clip": false
+          ]
         }
       }
     }

@@ -1,0 +1,146 @@
+# Production deployment on a single server.
+# All compose commands require --env-file .env.prod so that ${VAR} substitutions work.
+#
+# Set NYCHAREALTALK_DOMAIN and NYCHAREALTALK_TILES_DOMAIN in .env.prod to switch environments:
+#   NYCHAREALTALK_DOMAIN=dev.nycharealtalk.org
+#   NYCHAREALTALK_TILES_DOMAIN=tiles.dev.nycharealtalk.org
+#
+# First-time setup:
+#   1. Point NYCHAREALTALK_DOMAIN, www.NYCHAREALTALK_DOMAIN, and NYCHAREALTALK_TILES_DOMAIN DNS to this server.
+#   2. Copy .env.example to .env.prod and fill in production values (see .env.example).
+#   3. Add the production-only vars to .env.prod:
+#        NYCHAREALTALK_DOMAIN=dev.nycharealtalk.org
+#        NYCHAREALTALK_TILES_DOMAIN=tiles.dev.nycharealtalk.org
+#        NYCHAREALTALK_ALLOWED_HOSTS=dev.nycharealtalk.org,www.dev.nycharealtalk.org
+#        NYCHAREALTALK_MEMCACHE_LOCATION=memcached:11211
+#        NYCHAREALTALK_EMAIL_HOST=...
+#        NYCHAREALTALK_EMAIL_USER=...
+#        NYCHAREALTALK_EMAIL_PASSWORD=...
+#        NYCHAREALTALK_DEFAULT_FROM_EMAIL=...
+#        NYCHAREALTALK_SERVER_EMAIL=...
+#   4. docker compose -f docker-compose.prod.yml --env-file .env.prod up -d db memcached
+#   5. docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web python manage.py migrate
+#   6. docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web python manage.py collectstatic --noinput
+#   7. ./docker/init-letsencrypt.sh   # issues SSL certs and starts everything
+#
+# Subsequent deploys:
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod build
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web python manage.py migrate
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm web python manage.py collectstatic --noinput
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/create-views.sql:/docker-entrypoint-initdb.d/create-views.sql
+    environment:
+      POSTGRES_DB: ${NYCHAREALTALK_DB_NAME:-nycharealtalk}
+      POSTGRES_USER: ${NYCHAREALTALK_DB_USER:-nycharealtalk}
+      POSTGRES_PASSWORD: ${NYCHAREALTALK_DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${NYCHAREALTALK_DB_USER:-nycharealtalk}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  memcached:
+    image: memcached:alpine
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      args:
+        REQUIREMENTS: production.txt
+    command: gunicorn nycharealtalk.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120
+    volumes:
+      - static_files:/app/nycharealtalk/collected_static
+      - media_files:/app/nycharealtalk/media
+    working_dir: /app/nycharealtalk
+    depends_on:
+      db:
+        condition: service_healthy
+      memcached:
+        condition: service_started
+    env_file: .env.prod
+    environment:
+      NYCHAREALTALK_DB_HOST: db
+      NYCHAREALTALK_DB_PORT: "5432"
+      DJANGO_SETTINGS_MODULE: nycharealtalk.settings.production
+    restart: unless-stopped
+
+  tilestache:
+    build:
+      context: .
+      dockerfile: Dockerfile.tilestache
+    depends_on:
+      db:
+        condition: service_healthy
+      memcached:
+        condition: service_started
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${NYCHAREALTALK_DB_NAME:-nycharealtalk}
+      DB_USER: ${NYCHAREALTALK_DB_USER:-nycharealtalk}
+      DB_PASSWORD: ${NYCHAREALTALK_DB_PASSWORD}
+      MEMCACHED_HOST: memcached
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - static_files:/static:ro
+      - media_files:/media:ro
+      - certbot_certs:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    environment:
+      DOMAIN: ${NYCHAREALTALK_DOMAIN}
+      TILES_DOMAIN: ${NYCHAREALTALK_TILES_DOMAIN}
+    depends_on:
+      - web
+      - tilestache
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: .
+      args:
+        REQUIREMENTS: production.txt
+    entrypoint: /app/docker/scheduler-entrypoint.sh
+    volumes:
+      - ./docker/crontab:/etc/cron.d/nycharealtalk:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      memcached:
+        condition: service_started
+    env_file: .env.prod
+    environment:
+      NYCHAREALTALK_DB_HOST: db
+      NYCHAREALTALK_DB_PORT: "5432"
+      DJANGO_SETTINGS_MODULE: nycharealtalk.settings.production
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_certs:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    # Renew twice daily; certbot only acts when < 30 days remain.
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  static_files:
+  media_files:
+  certbot_certs:
+  certbot_www:

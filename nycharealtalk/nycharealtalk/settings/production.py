@@ -66,12 +66,10 @@ LOGGING = {
         }
     },
     'handlers': {
-        'log_file': {
+        'console': {
             'level': 'WARNING',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(PROJECT_ROOT, '../logs', 'django.log'),
-            'maxBytes': '16777216', # 16megabytes
-            'formatter': 'verbose'
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
         },
         'mail_admins': {
             'level': 'ERROR',
@@ -87,7 +85,7 @@ LOGGING = {
         },
     },
     'root': {
-        'handlers': ['log_file', 'mail_admins'],
+        'handlers': ['console', 'mail_admins'],
         'level': 'WARNING',
     },
 }
@@ -107,8 +105,9 @@ TEMPLATES[0]['OPTIONS']['loaders'] = (
 #
 # SSL
 #
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
-MAP_SCREENSHOT_URL = "https://nycharealtalk.org/screenshot/"
-LOT_TILES_URL = "https://tiles.nycharealtalk.org/lots/{z}/{x}/{y}.json"
-PARCELS_URL = "https://tiles.nycharealtalk.org/parcels/{z}/{x}/{y}.json"
+MAP_SCREENSHOT_URL = "https://%s/screenshot/" % get_env_variable('DOMAIN')
+LOT_TILES_URL = "https://%s/lots/{z}/{x}/{y}.json" % get_env_variable('TILES_DOMAIN')
+PARCELS_URL = "https://%s/parcels/{z}/{x}/{y}.json" % get_env_variable('TILES_DOMAIN')

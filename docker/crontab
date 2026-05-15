@@ -1,0 +1,5 @@
+# Send queued outbound mail (django-mailer)
+* * * * * root cd /app/nycharealtalk && python manage.py send_mail >> /proc/1/fd/1 2>&1
+
+# Send livinglots mailings
+0 8 * * * root cd /app/nycharealtalk && python manage.py sendmailings >> /proc/1/fd/1 2>&1
